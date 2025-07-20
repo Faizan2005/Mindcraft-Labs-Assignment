@@ -1,6 +1,9 @@
 const express = require("express");
+const http = require("http");
+const { initializeSocketIOServer, broadcast } = require('./websocketServer');
+
 const app = express();
-const PORT = 3000;
+const API_PORT = 3000;
 
 app.use(express.json());
 
@@ -13,18 +16,15 @@ let sessionStats = {
     lastUpdatedDate: new Date().toISOString().slice(0, 10),
 };
 
-let broadcastWebSocketUpdate = (type, data) => {
-    console.log(`[WebSocket Broadcast Placeholder] Would broadcast '${type}' with data:`, data);
-};
+const server = http.createServer(app);
+initializeSocketIOServer(server);
 
 app.post("/api/events", (req, res) => {
     const event = req.body;
     console.log("[API Server] Received event:", event);
 
     if (!event.type || !event.sessionId || !event.timestamp) {
-        return res
-            .status(400)
-            .send("Missing required event fields: type, sessionId, timestamp");
+        return res.status(400).send("Missing required event fields: type, sessionId, timestamp");
     }
 
     visitorLogs.push(event);
@@ -53,7 +53,8 @@ app.post("/api/events", (req, res) => {
             session.lastActive = new Date(event.timestamp);
         } else if (event.type === 'session_end') {
             const durationSeconds = Math.floor((new Date(event.timestamp).getTime() - session.firstActive.getTime()) / 1000);
-            broadcastWebSocketUpdate('session_activity', {
+
+            broadcast('session_activity', {
                 sessionId: sessionId,
                 currentPage: session.currentPage,
                 journey: session.journey,
@@ -63,6 +64,8 @@ app.post("/api/events", (req, res) => {
             activeSessions.delete(sessionId);
             console.log(`Session ${sessionId} ended...`);
             sessionStats.totalActive = activeSessions.size;
+            res.status(200).send("Event received and processed.");
+            return;
         }
     }
 
@@ -87,7 +90,7 @@ app.post("/api/events", (req, res) => {
         }
     }
 
-    broadcastWebSocketUpdate('visitor_update', {
+    broadcast('visitor_update', {
         event: event,
         stats: {
             totalActive: sessionStats.totalActive,
@@ -98,11 +101,19 @@ app.post("/api/events", (req, res) => {
 
     if (event.type === 'pageview' && session.currentPage) {
         const currentDuration = Math.floor((new Date().getTime() - session.firstActive.getTime()) / 1000);
-        broadcastWebSocketUpdate('session_activity', {
+        broadcast('session_activity', {
             sessionId: sessionId,
             currentPage: session.currentPage,
             journey: session.journey,
             duration: currentDuration
+        });
+    }
+
+    if (event.type === 'pageview' && sessionStats.totalToday % 5 === 0 && sessionStats.totalToday > 0) {
+        broadcast('alert', {
+            level: 'milestone',
+            message: `Milestone: ${sessionStats.totalToday} total pageviews today!`,
+            details: { totalPageviews: sessionStats.totalToday }
         });
     }
 
@@ -123,15 +134,7 @@ app.get('/api/analytics/sessions', (req, res) => {
     res.json(sessionsArray);
 });
 
-app.listen(PORT, () => {
-    console.log(`API Server listening on http://localhost:${PORT}`);
+server.listen(API_PORT, () => {
+    console.log(`API Server listening on http://localhost:${API_PORT}`);
+    console.log(`Socket.IO Server listening on http://localhost:${API_PORT}`);
 });
-
-
-
-
-
-
-
-
-
