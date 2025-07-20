@@ -17,7 +17,8 @@ let sessionStats = {
 };
 
 const server = http.createServer(app);
-initializeSocketIOServer(server);
+
+initializeSocketIOServer(server, activeSessions);
 
 app.post("/api/events", (req, res) => {
     const event = req.body;

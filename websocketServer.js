@@ -1,14 +1,17 @@
 const { Server } = require("socket.io");
 
 let io;
+let activeSessionsGlobal;
 
-const initializeSocketIOServer = (httpServer) => {
+const initializeSocketIOServer = (httpServer, activeSessionsMap) => {
     io = new Server(httpServer, {
         cors: {
             origin: "*",
             methods: ["GET", "POST"]
         }
     });
+
+    activeSessionsGlobal = activeSessionsMap;
 
     io.on('connection', (socket) => {
         console.log(`[Socket.IO Server] Client connected: ${socket.id}`);
@@ -23,7 +26,26 @@ const initializeSocketIOServer = (httpServer) => {
 
         socket.on('request_detailed_stats', (data) => {
             console.log(`[Socket.IO Server] Received 'request_detailed_stats' from client ${socket.id}. Filters:`, data.filter);
-            socket.emit('detailed_stats_response', { message: 'Request received, filtering not implemented yet.' });
+
+            const requestedFilters = data.filter || {};
+            let filteredSessions = [];
+
+            if (activeSessionsGlobal) {
+                filteredSessions = Array.from(activeSessionsGlobal.values()).filter(session => {
+                    const countryMatch = !requestedFilters.country ||
+                        (session.country && session.country.toLowerCase() === requestedFilters.country.toLowerCase());
+                    const pageMatch = !requestedFilters.page ||
+                        (session.journey && session.journey.includes(requestedFilters.page));
+                    return countryMatch && pageMatch;
+                });
+            } else {
+                console.warn("[Socket.IO Server] activeSessionsGlobal not available for filtering.");
+            }
+
+            socket.emit('detailed_stats_response', {
+                filteredData: filteredSessions,
+                requestedFilters: requestedFilters
+            });
         });
 
         socket.on('track_dashboard_action', (data) => {

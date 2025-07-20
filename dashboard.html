@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Visitor Analytics Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Live Visitor Analytics</h1>
+
+        <div class="card connection-status">
+            <h2>Connection Status</h2>
+            <p>Server: <span id="connectionStatus" class="status-disconnected">Disconnected</span></p>
+            <p>Dashboards Online: <span id="dashboardsConnected">0</span></p>
+        </div>
+
+        <div class="card visitor-stats">
+            <h2>Visitor Statistics</h2>
+            <p>Active Visitors: <span id="activeVisitors">0</span></p>
+            <p>Total Pageviews Today: <span id="totalToday">0</span></p>
+        </div>
+
+        <div class="card pages-visited">
+            <h2>Pages Visited</h2>
+            <div id="pagesVisited" class="scrollable-list">
+                </div>
+        </div>
+
+        <div class="card live-feed">
+            <h2>Live Visitor Feed</h2>
+            <div id="liveVisitorFeed" class="scrollable-list">
+                </div>
+        </div>
+
+        <div class="card active-sessions">
+            <h2>Active Sessions</h2>
+            <div id="activeSessionsList" class="scrollable-list">
+                </div>
+        </div>
+
+        <div class="card filters-controls">
+            <h2>Filters & Controls</h2>
+            <div class="filter-group">
+                <input type="text" id="filterCountry" placeholder="Filter by Country">
+                <input type="text" id="filterPage" placeholder="Filter by Page">
+                <button id="applyFilterBtn">Apply Filters</button>
+            </div>
+            <button id="clearStatsBtn" class="clear-button">Clear/Reset Statistics</button>
+        </div>
+
+        <div class="card mini-chart">
+            <h2>Visitors Last 10 Minutes</h2>
+            <div id="miniChartContainer" class="chart-content">
+                </div>
+        </div>
+    </div>
+
+    <div id="sessionJourneyModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Session Details: <span id="modalSessionId"></span></h3>
+            <p>Current Page: <span id="modalCurrentPage"></span></p>
+            <p>Duration: <span id="modalDuration"></span> seconds</p>
+            <h4>Journey:</h4>
+            <ul id="modalJourneyList">
+                </ul>
+        </div>
+    </div>
+
+    <audio id="newVisitorSound" src="https://www.soundjay.com/buttons/button-1.mp3" preload="auto"></audio>
+    <div id="notificationBanner" class="notification-banner hidden">
+        New Visitor!
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
